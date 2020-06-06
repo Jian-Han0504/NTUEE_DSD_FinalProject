@@ -9,9 +9,9 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
-### 060612_ChinYi Updates
+### 060612_chinyi0523 Updates
 * Push Origin Files
-### 060611_JianHan Updates
+### 060611_Jian-Han0504 Updates
 * Create the repos.
 * Add and modify README.md
 

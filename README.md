@@ -9,6 +9,9 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060701_chinyi0523 Updatas
+* Remaining: Main
+* Finish MainCtrl ALUCtrl FowardUnit ImmGen...12 modules.
 ### 060701_Jian-Han0504 Updatas
 * Folder with cache (without L2 and with L2)
 * Only direct-mapped

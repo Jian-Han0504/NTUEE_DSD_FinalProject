@@ -138,5 +138,107 @@ module RISCV_Pipeline(	clk,
 						DCACHE_stall,   
 						DCACHE_rdata,   
 					);
+//----------Input Output Declaration
 input clk,rst_n;
-input 
+input DCACHE_stall,ICACHE_stall;
+input [31:0] DCACHE_rdata,ICACHE_rdata;
+output DCACHE_ren,ICACHE_ren;
+output DCACHE_wen,ICACHE_wen;
+output [29:0] DCACHE_addr,ICACHE_addr;
+output [31:0] DCACHE_wdata,ICACHE_wdata;
+endmodule
+//Submodules
+//-----------README------------
+//Status: Finish = Not debug
+//Status: Correct
+//Status: None = Still doing
+//-----------------------------
+
+module MainControl();
+endmodule
+
+module ALUControl();
+endmodule
+
+module ImmGenerator();
+endmodule
+
+module FowardingUnit();
+endmodule
+
+module ALU();
+endmodule
+
+module MainRegister();
+endmodule
+
+module PC();
+endmodule
+
+module PCRegister();
+endmodule
+
+//pipeline registers
+//Status : Finish
+module IFID(clk,rst_n,PC,Inst,nxt_PC,nxt_Inst);
+	input clk;
+	input rst_n;
+	output reg [31:0] PC;
+	output reg [31:0] Inst;
+	input [31:0] nxt_PC;
+	input [31:0] nxt_Inst;
+
+	reg [31:0] nxtr_PC;
+	reg [31:0] nxtr_Inst;
+
+	always@(*) begin
+		nxtr_PC = rst_n ? 32'b0 : PC;
+		nxtr_Inst = rst_n ? 32'b0 : Inst;
+	end
+	always@(posedge clk) begin
+		PC <= nxtr_PC;
+		Inst <= nxtr_Inst;
+	end
+endmodule
+//Status : Finish
+module IDEX(clk,rst_n,RS1_D,RS2IMM_D,RS1_A,RS2_A,RD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,
+nxt_RS1_D,nxt_RS2IMM_D,nxt_RS1_A,nxt_RS2_A,nxt_RD_A,nxt_ALUOp,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc);
+	input clk,rst_n;
+	output reg MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc;
+	output reg [3:0] ALUOp;
+	output reg [4:0] RS1_A,RS2_A,RD_A;
+	output reg [31:0] RS1_D,RS2IMM_D;
+	input nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc;
+	input [3:0] nxt_ALUOp;
+	input [4:0] nxt_RS1_A,nxt_RS2_A,nxt_RD_A;
+	input [31:0] nxt_RS1_D,nxt_RS2IMM_D;
+
+	reg nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_ALUsrc;
+	reg [3:0] nxtr_ALUOp;
+	reg [4:0] nxtr_RS1_A,nxtr_RS2_A,nxtr_RD_A;
+	reg [31:0] nxtr_RS1_D,nxtr_RS2IMM_D;
+
+	always@(*) begin
+		nxtr_RS1_D = rst_n ? 32'b0 : nxt_RS1_D;
+		nxtr_RS2IMM_D = rst_n ? 32'b0 : nxt_RS2IMM_D;
+		nxtr_RS1_A = rst_n ? 5'b0 : nxt_RS1_A;
+		nxtr_RS2_A = rst_n ? 5'b0 : nxt_RS2_A;
+		nxtr_RD_A = rst_n ? 5'b0 : nxt_RD_A;
+		nxtr_ALUOp = rst_n ? 4'b0 : nxt_ALUOp;
+		nxtr_MemtoReg = rst_n ? 1'b0 : nxt_MemtoReg;
+		nxtr_RegWrite = rst_n ? 1'b0 : nxt_RegWrite;
+		nxtr_MemRead = rst_n ? 1'b0 : nxt_MemRead;
+		nxtr_MemWrite = rst_n ? 1'b0 : nxt_MemWrite;
+		nxtr_ALUsrc = rst_n ? 1'b0 : nxt_ALUsrc;
+	end
+	always@(posedge clk) begin
+		{RS1_D,RS2IMM_D,RS1_A,RS2_A,RD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc} <= {nxtr_RS1_D,nxtr_RS2IMM_D,nxtr_RS1_A,nxtr_RS2_A,nxtr_RD_A,nxtr_ALUOp,nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_ALUsrc};	
+	end
+endmodule
+
+module EXMEM();
+endmodule
+
+module MEMWB();
+endmodule
+

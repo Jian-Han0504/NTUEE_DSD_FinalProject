@@ -9,6 +9,8 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060613_chinyi0523 Updates
+* Finish IFID IDEX pipeline
 ### 060612_chinyi0523 Updates
 * Push Origin Files
 ### 060611_Jian-Han0504 Updates

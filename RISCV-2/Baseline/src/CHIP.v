@@ -147,6 +147,21 @@ output DCACHE_wen,ICACHE_wen;
 output [29:0] DCACHE_addr,ICACHE_addr;
 output [31:0] DCACHE_wdata,ICACHE_wdata;
 
+MainControl MC(Inst,Jalr,Jal,BNE,BEQ,MemRead,MemWrite,MemtoReg,ALUSrc,RegWrite,Jtype);
+ALUControl AC(Inst,ALUCtrl);
+ImmGenerator IG(Inst,Immediate);
+FowardingUnit FU(RS1_A,RS2_A,WD_A_EXMEM,WD_A_MEMWR,1A,1B,2A,2B);
+ALU ALU(X,Y,Ctrl,Result);
+MainRegister MR(clk,rst_n,WD_D,RS1_A,RS2_A,WD_A,RegWrite,RS1_D,RS2_D);
+PC PC(clk,rst_n,RS1_D,RS2_D,nxtr_PC,IMM,Jalr,Jal,BEQ,BNE,cur_PC,nxtr_PC4);
+PCRegister PCR(clk,rst_n,PC,nxt_PC);
+IFID IFID(clk,rst_n,PC,Inst,nxt_PC,nxt_Inst);
+IDEX IDEX(clk,rst_n,Jtype,RS1_D,RS2IMM_D,RS1_A,RS2_A,WD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl;
+nxt_Jtype,nxt_RS1_D,nxt_RS2IMM_D,nxt_RS1_A,nxt_RS2_A,nxt_WD_A,nxt_ALUOp,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc,nxt_Jctrl);
+EXMEM EXME(clk,rst_n,Jtype,ALU,RS2IMM,WD_A,MemtoReg,RegWrite,MemRead,MemWrite,Jctrl,
+nxt_Jtype,nxt_ALU,nxt_RS2IMM,nxt_WD_A,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_Jctrl);
+MEMWB MEWB(clk,rst_n,Jtype,ALU,MEM,WD_A,MemtoReg,RegWrite,Jctrl,nxt_Jtype,nxt_ALU,nxt_MEM,nxt_WD_A,nxt_MemtoReg,nxt_RegWrite,nxt_Jctrl);
+
 endmodule
 //Submodules
 //-----------README------------
@@ -304,8 +319,8 @@ endmodule
 module PC(clk,rst_n,RS1_D,RS2_D,nxtr_PC,IMM,Jalr,Jal,BEQ,BNE,cur_PC,nxtr_PC4);
 	input clk,rst_n;
 	input Jalr,Jal,BEQ,BNE;
-	input [31:0] RS1_D,RS2_D,nxtr_PC,IMM;
-	output [31:0] cur_PC,nxtr_PC4;
+	input [31:0] RS1_D,RS2_D,nxtr_PC,IMM;//nxtr_PC  module IFID 's PC output
+	output [31:0] cur_PC,nxtr_PC4;//nxtr_PC4 : PC for J type
 
 	wire [31:0] nxt_PC,IMMRS1,IMMPC;
 	wire zero,JalB;

@@ -9,6 +9,8 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060703_chinyi0523 Updatas
+* Add Comments
 ### 060701_chinyi0523 Updatas
 * Remaining: Main
 * Finish MainCtrl ALUCtrl FowardUnit ImmGen...12 modules.

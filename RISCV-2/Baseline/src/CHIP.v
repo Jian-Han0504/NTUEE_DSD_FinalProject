@@ -166,16 +166,104 @@ endmodule
 module FowardingUnit();
 endmodule
 
-module ALU();
+//Status : Finish
+module ALU(X,Y,Ctrl,Result);
+	input [31:0] X; //RS1
+    input [31:0] Y; //RS2 IMM
+    input [3:0] Ctrl; //ALUOp
+    output [31:0] Result;
+	always @(*) begin
+		Result = 32'b0;
+		case (Ctrl[2:0])
+			3'b000: begin
+				if(Ctrl[3]): Result = $signed(X)-$signed(Y);
+				else:		 Result = $signed(X)+$signed(Y);
+			end
+			3'b001: Result = X<<1; //SLL
+			3'b010: Result = ( (X<Y) ? 1 : 0 ); //SLT
+			3'b011: Result = 32'b0; 
+			3'b100: Result = X^Y;
+			3'b101:  begin
+				if(Ctrl[3]): Result = {X[31],X[31:1]}; //SRA
+				else:		 Result = {1'b0,X[31:1]}; //SRL
+			end 
+			3'b110: X|Y;
+			3'b111: X&Y;
+			default: Result = 32'b0;
+		endcase
+	end
 endmodule
 
-module MainRegister();
-endmodule
+//Status : Finish
+module MainRegister(clk,rst_n,WD_D,RS1_A,RS2_A,WD_A,RegWrite,RS1_D,RS2_D);
 
-module PC();
-endmodule
+	input clk,rst_n;
+	input RegWrite; //RegWrite=1 if write
+    input [4:0] RS1_A,RS2_A,WD_A;
+    input [31:0] WD_D;
+    output [31:0] RS1_D,RS2_D;
+    
+    integer i;
+    reg [31:0] r32[0:31];
+    reg [31:0] nxt_r32[0:31];
 
-module PCRegister();
+    assign RS1_D = r32[RS1_A];
+    assign RS2_D = r32[RS2_A];
+	always @(*) begin
+        nxt_r32[0] = 0; //Const 0;
+        for (i=1; i<32; i=i+1)begin
+            nxt_r32[i] = r32[i];
+        end
+        for (i=1; i<32; i=i+1)begin
+            nxt_r32[i] = rst_n ? (RegWrite && (WD_A == i)) ? WD_D : r32[i] : 0;
+        end
+    end    
+    
+    always @(posedge clk) begin
+        r32[0] <= 0;
+        for (i=1; i<32; i=i+1)
+            r32[i] <= nxt_r32[i];
+    end
+endmodule
+//Status : Finish
+module PC(clk,rst_n,RS1_D,RS2_D,nxtr_PC,IMM,Jalr,Jal,BEQ,BNE,cur_PC,nxtr_PC4);
+	input clk,rst_n;
+	input Jalr,Jal,BEQ,BNE;
+	input [31:0] RS1_D,RS2_D,nxtr_PC,IMM;
+	output [31:0] cur_PC,nxtr_PC4;
+
+	wire [31:0] nxt_PC,IMMRS1,IMMPC;
+	wire zero,JalB;
+	PCRegister PCR(.clk(clk),.rst_n(rst_n),.PC(cur_PC),.nxt_PC(nxt_PC));
+
+	assign zero = (RS1_D == RS2_D) ? 1'b1 : 1'b0;
+	assign JalB = (zero&BEQ)|(~zero&BNE)|Jal;
+
+	assign IMMRS1 = IMM + RS1_D;
+	assign IMMPC = IMM + nxtr_PC;
+	assign nxtr_PC4 = nxtr_PC + 4;
+	assign cur_PC4 = cur_PC + 4;
+
+	assign nxt_PC = Jalr ? IMMRS1 : 
+		   			jalB ? IMMPC : cur_PC4;
+
+endmodule
+//Status : Finish
+module PCRegister(clk,rst_n,PC,nxt_PC);
+	input clk;
+    input rst_n;
+    input [31:0] nxt_PC;
+    output [31:0] PC;
+
+    reg [31:0] r_PC,nxtr_PC;
+    
+    assign PC = r_PC;
+    always@(*) begin
+        nxtr_PC = rst_n ? nxt_PC : 0;
+    end
+    always@(posedge clk) begin
+        r_PC <= nxtr_new;
+    end
 endmodule
 
 //pipeline registers
@@ -192,8 +280,8 @@ module IFID(clk,rst_n,PC,Inst,nxt_PC,nxt_Inst);
 	reg [31:0] nxtr_Inst;
 
 	always@(*) begin
-		nxtr_PC = rst_n ? 32'b0 : PC;
-		nxtr_Inst = rst_n ? 32'b0 : Inst;
+		nxtr_PC = rst_n ? PC : 32'b0;
+		nxtr_Inst = rst_n ? Inst : 32'b0;
 	end
 	always@(posedge clk) begin
 		PC <= nxtr_PC;
@@ -201,74 +289,74 @@ module IFID(clk,rst_n,PC,Inst,nxt_PC,nxt_Inst);
 	end
 endmodule
 //Status : Finish
-module IDEX(clk,rst_n,Jtype,RS1_D,RS2IMM_D,RS1_A,RS2_A,RD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl;
-nxt_Jtype,nxt_RS1_D,nxt_RS2IMM_D,nxt_RS1_A,nxt_RS2_A,nxt_RD_A,nxt_ALUOp,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc,nxt_Jctrl);
+module IDEX(clk,rst_n,Jtype,RS1_D,RS2IMM_D,RS1_A,RS2_A,WD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl;
+nxt_Jtype,nxt_RS1_D,nxt_RS2IMM_D,nxt_RS1_A,nxt_RS2_A,nxt_WD_A,nxt_ALUOp,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc,nxt_Jctrl);
 	input clk,rst_n;
 	output reg MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl;
 	output reg [3:0] ALUOp;
-	output reg [4:0] RS1_A,RS2_A,RD_A;
+	output reg [4:0] RS1_A,RS2_A,WD_A;
 	output reg [31:0] RS1_D,RS2IMM_D,Jtype;
 	input nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_ALUsrc,nxt_Jctrl;
 	input [3:0] nxt_ALUOp;
-	input [4:0] nxt_RS1_A,nxt_RS2_A,nxt_RD_A;
+	input [4:0] nxt_RS1_A,nxt_RS2_A,nxt_WD_A;
 	input [31:0] nxt_RS1_D,nxt_RS2IMM_D,nxt_Jtype;
 
 	reg nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_ALUsrc,nxtr_Jctrl;
 	reg [3:0] nxtr_ALUOp;
-	reg [4:0] nxtr_RS1_A,nxtr_RS2_A,nxtr_RD_A;
+	reg [4:0] nxtr_RS1_A,nxtr_RS2_A,nxtr_WD_A;
 	reg [31:0] nxtr_RS1_D,nxtr_RS2IMM_D,nxtr_Jtype;
 
 	always@(*) begin
-		nxtr_Jtype = rst_n ? 32'b0 : nxt_Jtype;
-		nxtr_RS1_D = rst_n ? 32'b0 : nxt_RS1_D;
-		nxtr_RS2IMM_D = rst_n ? 32'b0 : nxt_RS2IMM_D;
-		nxtr_RS1_A = rst_n ? 5'b0 : nxt_RS1_A;
-		nxtr_RS2_A = rst_n ? 5'b0 : nxt_RS2_A;
-		nxtr_RD_A = rst_n ? 5'b0 : nxt_RD_A;
-		nxtr_ALUOp = rst_n ? 4'b0 : nxt_ALUOp;
-		nxtr_MemtoReg = rst_n ? 1'b0 : nxt_MemtoReg;
-		nxtr_RegWrite = rst_n ? 1'b0 : nxt_RegWrite;
-		nxtr_MemRead = rst_n ? 1'b0 : nxt_MemRead;
-		nxtr_MemWrite = rst_n ? 1'b0 : nxt_MemWrite;
-		nxtr_ALUsrc = rst_n ? 1'b0 : nxt_ALUsrc;
-		nxtr_Jctrl = rst_n ? 1'b0 : nxt_Jctrl;
+		nxtr_Jtype = rst_n ? nxt_Jtype : 32'b0;
+		nxtr_RS1_D = rst_n ? nxt_RS1_D : 32'b0;
+		nxtr_RS2IMM_D = rst_n ? nxt_RS2IMM_D : 32'b0;
+		nxtr_RS1_A = rst_n ? nxt_RS1_A : 5'b0;
+		nxtr_RS2_A = rst_n ? nxt_RS2_A : 5'b0;
+		nxtr_WD_A = rst_n ? nxt_WD_A : 5'b0;
+		nxtr_ALUOp = rst_n ? nxt_ALUOp : 4'b0;
+		nxtr_MemtoReg = rst_n ? nxt_MemtoReg : 1'b0;
+		nxtr_RegWrite = rst_n ? nxt_RegWrite : 1'b0;
+		nxtr_MemRead = rst_n ? nxt_MemRead : 1'b0;
+		nxtr_MemWrite = rst_n ? nxt_MemWrite : 1'b0;
+		nxtr_ALUsrc = rst_n ? nxt_ALUsrc : 1'b0;
+		nxtr_Jctrl = rst_n ? nxt_Jctrl : 1'b0;
 	end
 	always@(posedge clk) begin
-		{Jtype,RS1_D,RS2IMM_D,RS1_A,RS2_A,RD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl} <= {nxtr_Jtype,nxtr_RS1_D,nxtr_RS2IMM_D,nxtr_RS1_A,nxtr_RS2_A,nxtr_RD_A,nxtr_ALUOp,nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_ALUsrc,nxtr_Jctrl};	
+		{Jtype,RS1_D,RS2IMM_D,RS1_A,RS2_A,WD_A,ALUOp,MemtoReg,RegWrite,MemRead,MemWrite,ALUsrc,Jctrl} <= {nxtr_Jtype,nxtr_RS1_D,nxtr_RS2IMM_D,nxtr_RS1_A,nxtr_RS2_A,nxtr_WD_A,nxtr_ALUOp,nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_ALUsrc,nxtr_Jctrl};	
 	end
 endmodule
 //Status : Finish
-module EXMEM(clk,rst_n,Jtype,ALU,RS2IMM,RD_A,MemtoReg,RegWrite,MemRead,MemWrite,Jctrl,
-nxt_Jtype,nxt_ALU,nxt_RS2IMM,nxt_RD_A,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_Jctrl);
+module EXMEM(clk,rst_n,Jtype,ALU,RS2IMM,WD_A,MemtoReg,RegWrite,MemRead,MemWrite,Jctrl,
+nxt_Jtype,nxt_ALU,nxt_RS2IMM,nxt_WD_A,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_Jctrl);
 	input clk,rst_n;
 	output reg [31:0] Jtype,ALU,RS2IMM;
-	output reg [4:0] RD_A;
+	output reg [4:0] WD_A;
 	output reg MemtoReg,RegWrite,MemRead,MemWrite,Jctrl;
 	input [31:0] nxt_Jtype,nxt_ALU,nxt_RS2IMM;
-	input [4:0] nxt_RD_A;
+	input [4:0] nxt_WD_A;
 	input nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_MemWrite,nxt_Jctrl;
 
 	reg [31:0] nxtr_Jtype,nxtr_ALU,nxtr_RS2IMM;
-	reg [4:0] nxtr_RD_A;
+	reg [4:0] nxtr_WD_A;
 	reg nxtr_MemtoReg,nxtr_RegWrite,nxtr_MemRead,nxtr_MemWrite,nxtr_Jctrl;
 
 	always@(*) begin
-		nxtr_Jtype = rst_n ? 32'b0 : nxt_Jtype;
-		nxtr_ALU = rst_n ? 32'b0 : nxt_ALU;
-		nxtr_RS2IMM = rst_n ? 32'b0 : nxt_RS2IMM;
-		nxtr_RD_A = rst_n ? 5'b0 : nxt_RD_A;
-		nxtr_MemtoReg = rst_n ? 1'b0 : nxt_MemtoReg;
-		nxtr_RegWrite = rst_n ? 1'b0 : nxt_RegWrite;
-		nxtr_MemRead = rst_n ? 1'b0 : nxt_MemRead;
-		nxtr_MemWrite = rst_n ? 1'b0 : nxt_MemWrite;
-		nxtr_Jctrl = rst_n ? 1'b0 : nxt_Jctrl;
+		nxtr_Jtype = rst_n ? nxt_Jtype : 32'b0;
+		nxtr_ALU = rst_n ? nxt_ALU : 32'b0;
+		nxtr_RS2IMM = rst_n ? nxt_RS2IMM : 32'b0;
+		nxtr_WD_A = rst_n ? nxt_WD_A : 5'b0;
+		nxtr_MemtoReg = rst_n ? nxt_MemtoReg : 1'b0;
+		nxtr_RegWrite = rst_n ? nxt_RegWrite : 1'b0;
+		nxtr_MemRead = rst_n ? nxt_MemRead : 1'b0;
+		nxtr_MemWrite = rst_n ? nxt_MemWrite : 1'b0;
+		nxtr_Jctrl = rst_n ? nxt_Jctrl : 1'b0;
 	end
 
 	always@(posedge clk) begin
 		Jtype <= nxtr_Jtype;
 		ALU <= nxtr_ALU;
 		RS2IMM <= nxtr_RS2IMM;
-		RD_A <= nxtr_RD_A;
+		WD_A <= nxtr_WD_A;
 		MemtoReg <= nxtr_MemtoReg;
 		RegWrite <= nxtr_RegWrite;
 		MemRead <= nxtr_MemRead;
@@ -278,34 +366,34 @@ nxt_Jtype,nxt_ALU,nxt_RS2IMM,nxt_RD_A,nxt_MemtoReg,nxt_RegWrite,nxt_MemRead,nxt_
 
 endmodule
 //Status : Finish
-module MEMWB(clk,rst_n,Jtype,ALU,MEM,RD_A,MemtoReg,RegWrite,Jctrl,nxt_Jtype,nxt_ALU,nxt_MEM,nxt_RD_A,nxt_MemtoReg,nxt_RegWrite,nxt_Jctrl);
+module MEMWB(clk,rst_n,Jtype,ALU,MEM,WD_A,MemtoReg,RegWrite,Jctrl,nxt_Jtype,nxt_ALU,nxt_MEM,nxt_WD_A,nxt_MemtoReg,nxt_RegWrite,nxt_Jctrl);
 	input clk,rst_n;
 	output reg [31:0] Jtype,ALU,MEM;
-	output reg [4:0] RD_A;
+	output reg [4:0] WD_A;
 	output reg MemtoReg,RegWrite,Jctrl;
 	input [31:0] nxt_Jtype,nxt_ALU,nxt_MEM;
-	input [4:0] nxt_RD_A;
+	input [4:0] nxt_WD_A;
 	input nxt_MemtoReg,nxt_RegWrite,nxt_Jctrl;
 
 	reg [31:0] nxtr_Jtype,nxtr_ALU,nxtr_MEM;
-	reg [4:0] nxtr_RD_A;
+	reg [4:0] nxtr_WD_A;
 	reg nxtr_MemtoReg,nxtr_RegWrite,nxtr_Jctrl;
 
 	always@(*)begin
-		nxtr_Jtype = rst_n ? 32'b0 : nxt_Jtype;
-		nxtr_ALU = rst_n ? 32'b0 : nxt_ALU; 
-		nxtr_MEM = rst_n ? 32'b0 : nxt_MEM;
-		nxtr_RD_A = rst_n ? 5'b0 : nxt_RD_A;
-		nxtr_MemtoReg = rst_n ? 1'b0 : nxt_MemtoReg;
-		nxtr_RegWrite = rst_n ? 1'b0 : nxt_RegWrite;
-		nxtr_Jctrl = rst_n ? 1'b0 : nxt_Jctrl;
+		nxtr_Jtype = rst_n ? nxt_Jtype : 32'b0;
+		nxtr_ALU = rst_n ? nxt_ALU : 32'b0; 
+		nxtr_MEM = rst_n ? nxt_MEM : 32'b0;
+		nxtr_WD_A = rst_n ? nxt_WD_A : 5'b0;
+		nxtr_MemtoReg = rst_n ? nxt_MemtoReg : 1'b0;
+		nxtr_RegWrite = rst_n ? nxt_RegWrite : 1'b0;
+		nxtr_Jctrl = rst_n ? nxt_Jctrl : 1'b0;
 	end
 
 	always@(posedge clk)begin
 		Jtype <= nxtr_Jtype;
 		ALU <= nxtr_ALU; 
 		MEM <= nxtr_MEM;
-		RD_A <= nxtr_RD_A;
+		WD_A <= nxtr_WD_A;
 		MemtoReg <= nxtr_MemtoReg;
 		RegWrite <= nxtr_RegWrite;
 		Jctrl <= nxtr_Jctrl;

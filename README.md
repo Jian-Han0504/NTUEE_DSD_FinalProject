@@ -9,8 +9,10 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060622_chinyi0523 Updates
+* Finish ALU Reg32 Reg1 PC
 ### 060619_chinyi0523 Updates
-* Finish IFID IDEX EXMEM MEMWR pipeline
+* Finish EXMEM MEMWR pipeline
 * Fix IFID IDEX pipeline (add Jtype) 
 ### 060613_chinyi0523 Updates
 * Finish IFID IDEX pipeline

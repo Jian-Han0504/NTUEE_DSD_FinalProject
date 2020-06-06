@@ -9,6 +9,11 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060701_Jian-Han0504 Updatas
+* Folder with cache (without L2 and with L2)
+* Only direct-mapped
+* Cannot be merged into the main module
+
 ### 060622_chinyi0523 Updates
 * Finish ALU Reg32 Reg1 PC
 ### 060619_chinyi0523 Updates

@@ -146,6 +146,7 @@ output DCACHE_ren,ICACHE_ren;
 output DCACHE_wen,ICACHE_wen;
 output [29:0] DCACHE_addr,ICACHE_addr;
 output [31:0] DCACHE_wdata,ICACHE_wdata;
+
 endmodule
 //Submodules
 //-----------README------------
@@ -154,16 +155,90 @@ endmodule
 //Status: None = Still doing
 //-----------------------------
 
-module MainControl();
+//Status : Finish
+module MainControl(Inst,Jalr,Jal,BNE,BEQ,MemRead,MemWrite,MemtoReg,ALUSrc,RegWrite,Jtype);
+	input [5:0] Inst; //funct3[0] OP[6:2] (INST[12] INST[6:2])
+    output reg Jalr;
+    output reg Jal;
+    output reg BNE;
+	output reg BEQ;
+    output reg MemRead;
+	output reg MemWrite; 
+    output reg MemtoReg;
+    output reg ALUSrc;
+    output reg RegWrite;
+	output Jtype;
+	assign Jtype = Jalr|Jal;
+
+	always@(*) begin
+		case (Inst[4:0])
+			5'b01100: begin //R type
+                    	Jalr = 1'b0; Jal = 1'b0; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b1;
+                        end
+            5'b00000: begin //lw
+                        Jalr = 1'b0; Jal = 1'b0; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'b1; MemWrite = 1'b0; MemtoReg = 1'b1; ALUSrc = 1'b1; RegWrite=1'b1;
+                        end
+            5'b01000: begin //sw
+                        Jalr = 1'b0; Jal = 1'b0; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'b0; MemWrite = 1'b1; MemtoReg = 1'bx; ALUSrc = 1'b1; RegWrite=1'b0;
+                        end
+            5'b11000: begin //beq bne
+                        Jalr = 1'b0; Jal = 1'b0; BEQ = ~Inst[5]; BNE = Inst[5]; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'b0; RegWrite=1'b0;
+                        end
+            5'b11011: begin //jal
+                        Jalr = 1'b0; Jal = 1'b1; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
+                        end
+            5'b11001: begin //jalr
+						Jalr = 1'b1; Jal = 1'b0; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
+                        end  
+			default:  begin
+				Jalr = 1'b0; Jal = 1'b0; BEQ = 1'b0; BNE = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b0;
+			end
+		endcase
+	end
 endmodule
 
-module ALUControl();
+//Status : Finish
+module ALUControl(Inst,ALUCtrl);
+	input [4:0] Inst; // {funct7[5],funct3,OP[4]}
+    output reg[3:0] ALUCtrl;
+	assign ALUCtrl = Inst[0] ? Inst[4:1] : 4'b0000;
 endmodule
 
-module ImmGenerator();
+//Status : Finish
+module ImmGenerator(Inst,Immediate);
+	input [31:0] Inst;
+    output reg[31:0] Immediate;
+    wire [3:0] Typectrl ;
+	wire [2:0] Funct3;
+    //0000/1101:I 0100:S 1100:B 1111:J
+    wire [31:0] I,S,B,J;
+	assign Funct3 = Inst[14:12];
+    assign Typectrl = {Inst[6:5],Inst[3:2]};
+    assign I = {{21{Inst[31]}},Inst[30:20]};
+	assign ISHAMT = {27'b0,Inst[24:20]};
+    assign S = {{21{Inst[31]}},Inst[30:25],Inst[11:7]};
+    assign B = {{20{Inst[31]}},Inst[7],Inst[30:25],Inst[11:8],1'b0};
+    assign J = {{12{Inst[31]}},Inst[19:12],Inst[20],Inst[30:21],1'b0};
+	always @(*) begin
+		case (Typectrl)
+			Immediate = 32'b0;
+			4'b0000: Immediate = (Funct3==3'b101) ? ISHAMT : I;
+			4'b1101: Immediate = I;
+			4'b0100: Immediate = S;
+			4'b1100: Immediate = B;
+			4'b1111: Immediate = J; 
+			default: Immediate = 0; 
+		endcase
+	end
 endmodule
 
-module FowardingUnit();
+module FowardingUnit(RS1_A,RS2_A,WD_A_EXMEM,WD_A_MEMWR,1A,1B,2A,2B);
+	input [4:0] RS1_A,RS2_A,WD_A_EXMEM,WD_A_MEMWR;
+	output 1A,1B,2A,2B;
+	assign 1A = (RS1_A==WD_A_EXMEM) ? 1:0;
+	assign 1B = (RS1_A==WD_A_MEMWR) ? 1:0;
+	assign 2A = (RS2_A==WD_A_EXMEM) ? 1:0;
+	assign 2B = (RS2_A==WD_A_MEMWR) ? 1:0;
 endmodule
 
 //Status : Finish
@@ -171,7 +246,7 @@ module ALU(X,Y,Ctrl,Result);
 	input [31:0] X; //RS1
     input [31:0] Y; //RS2 IMM
     input [3:0] Ctrl; //ALUOp
-    output [31:0] Result;
+    output reg[31:0] Result;
 	always @(*) begin
 		Result = 32'b0;
 		case (Ctrl[2:0])

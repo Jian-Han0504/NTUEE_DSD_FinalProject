@@ -9,6 +9,8 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 060923_Chou-dd Updates
+* Add CHIP_nohazard.v in src file
 ### 060703_chinyi0523 Updatas
 * Add Comments
 ### 060701_chinyi0523 Updatas
@@ -18,7 +20,6 @@ Format:
 * Folder with cache (without L2 and with L2)
 * Only direct-mapped
 * Cannot be merged into the main module
-
 ### 060622_chinyi0523 Updates
 * Finish ALU Reg32 Reg1 PC
 ### 060619_chinyi0523 Updates

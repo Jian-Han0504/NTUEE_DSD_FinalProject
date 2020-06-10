@@ -9,6 +9,9 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 061017_Jain-Han0504 Updates
+* Complete the script but with execution bugs.
+
 ### 060923_Chou-dd Updates
 * Add CHIP_nohazard.v in src file
 ### 060703_chinyi0523 Updatas

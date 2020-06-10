@@ -9,6 +9,11 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 061101_chinyi0523 Updates
+* Add DSD_checkpoint.pptx
+
+### 061023_Jain-Han0504 Updates
+* Chip.v --No hazard pass
 ### 061023_Chou-dd Updates
 * Add hazard_unit.v in src file
 ### 061017_Jain-Han0504 Updates

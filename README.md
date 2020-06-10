@@ -23,12 +23,12 @@ Format:
 
 ### 060923_Chou-dd Updates
 * Add CHIP_nohazard.v in src file
-### 060703_chinyi0523 Updatas
+### 060703_chinyi0523 Updates
 * Add Comments
-### 060701_chinyi0523 Updatas
+### 060701_chinyi0523 Updates
 * Remaining: Main
 * Finish MainCtrl ALUCtrl FowardUnit ImmGen...12 modules.
-### 060701_Jian-Han0504 Updatas
+### 060701_Jian-Han0504 Updates
 * Folder with cache (without L2 and with L2)
 * Only direct-mapped
 * Cannot be merged into the main module

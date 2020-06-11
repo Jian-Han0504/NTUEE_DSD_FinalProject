@@ -163,43 +163,34 @@ module RISCV_Pipeline(	clk,
 	// ID
 	wire [31:0] ID_inst;
 	wire [31:0] ID_pc;
-	wire [31:0] ID_pc_plus4;
+	wire [31:0] ID_pc_plus4, nxt_EX_J_StorePC;
 	wire  [5:0] ctrl_inst; // inst for control unit
 	wire  [4:0] alu_ctrl_inst; // inst for ALU control signals
-	wire [31:0] ID_immediate;
+	wire [31:0] ID_immediate, nxt_EX_Immediate;
 
-	wire  [4:0] ID_rs1_addr, ID_rs2_addr; // forwarding to EXE stage
-	wire  [4:0] ID_writeb_addr;
-	wire [31:0] ID_rs1_data, ID_rs2_data; // output from register file
+	wire  [4:0] ID_rs1_addr, nxt_EX_RS1_addr, ID_rs2_addr, nxt_EX_RS2_addr; // forwarding to EXE stage
+	wire  [4:0] ID_writeb_addr, nxt_EX_WB_addr;
+	wire [31:0] ID_rs1_data, nxt_EX_RS1_data, ID_rs2_data, nxt_EX_RS2_data; // output from register file
 
 	// ID Control
 	wire ID_jalr, ID_jal, ID_bne, ID_beq, 
-		 ID_mem_read, ID_mem_write, ID_mem2reg, 
-		 ID_alu_src, ID_reg_write, ID_is_jump;
-	wire  [3:0] ID_alu_op;
-
+		 ID_mem_read, nxt_EX_MemRead, ID_mem_write, nxt_EX_MemWrite, ID_mem2reg, nxt_EX_MemtoReg, 
+		 ID_alu_src, nxt_EX_ALUsrc, ID_reg_write, nxt_EX_RegWrite, ID_is_jump, nxt_EX_is_Jump;
+	wire  [3:0] ID_alu_op, nxt_EX_ALUop;
 	// EX
 	
-	wire [31:0] EX_pc_plus4, nxt_EX_J_StorePC;
+	wire [31:0] EX_pc_plus4;
 	wire  [4:0] EX_rs1_addr, EX_rs2_addr;
 	wire [31:0] EX_rs1_data, EX_rs2_data;
 	wire [31:0] EX_immediate;
-	wire [31:0] EX_Fwdrs2_data, nxt_EX_MemWrt_data;
+	wire [31:0] EX_Fwdrs2_data;
 	wire  [3:0] EX_alu_op;
 	wire [31:0] EX_alu_inA, EX_alu_inB;
-	wire [31:0] EX_alu_result, nxt_EX_ALU_result;
-	wire  [4:0] EX_writeb_addr, nxt_EX_WB_addr;
-	wire EX_mem_read, nxt_EX_MemRead, EX_mem_write, nxt_EX_MemWrite, EX_mem2reg, nxt_EX_mem2reg, 
-		 EX_alu_src, EX_reg_write, nxt_EX_RegWrite, EX_is_jump,nxt_EX_is_Jump, control_zero;
-	assign nxt_EX_J_StorePC = control_zero ? 0 : EX_pc_plus4;
-	assign nxt_EX_MemWrt_data = control_zero ? 0 : EX_Fwdrs2_data;
-	assign nxt_EX_ALU_result = control_zero ? 0 : EX_alu_result;
-	assign nxt_EX_WB_addr = control_zero ? 0 : EX_writeb_addr;
-	assign nxt_EX_MemRead  = control_zero ? 0 : EX_mem_read;
-	assign nxt_EX_MemWrite = control_zero ? 0 : EX_mem_write;
-	assign nxt_EX_mem2reg = control_zero ? 0 : EX_mem2reg;
-	assign nxt_EX_RegWrite = control_zero ? 0 : EX_reg_write;
-	assign nxt_EX_is_Jump = control_zero ? 0 : EX_is_jump;
+	wire [31:0] EX_alu_result;
+	wire  [4:0] EX_writeb_addr;
+	wire EX_mem_read, EX_mem_write, EX_mem2reg, 
+		 EX_alu_src, EX_reg_write, EX_is_jump, control_zero;
+
 	// MEM 
 	wire [31:0] ME_pc_plus4;
 	wire [31:0] ME_alu_result, ME_memWrt_data;
@@ -253,7 +244,7 @@ module RISCV_Pipeline(	clk,
 	// IF/ID
 	IFID IFID0 (.clk (clk), 
 				.rst_n (rst_n), 
-				.isStall (stall),
+				.isStall (IF_ID_stall),
 				.isFlush (flush),
 				.nxt_PC (IF_pc),
 				.nxt_PCplus4 (IF_pc_plus4),
@@ -299,16 +290,29 @@ module RISCV_Pipeline(	clk,
 	);
 
 	// ID/EXE
+	assign nxt_EX_RS1_data = control_zero ? 0 : ID_rs1_data;
+	assign nxt_EX_RS2_data = control_zero ? 0 : ID_rs2_data;
+	assign nxt_EX_Immediate = control_zero ? 0 : ID_immediate;
+	assign nxt_EX_WB_addr = control_zero ? 0 : ID_writeb_addr;
+	assign nxt_EX_J_StorePC = control_zero ? 0 : ID_pc_plus4;
+	assign nxt_EX_ALUop = control_zero ? 0 : ID_alu_op; 
+	assign nxt_EX_is_Jump = control_zero ? 0 : ID_is_jump;
+	assign nxt_EX_MemtoReg = control_zero ? 0 : ID_mem2reg;
+	assign nxt_EX_RegWrite = control_zero ? 0 : ID_reg_write;
+	assign nxt_EX_MemRead = control_zero ? 0 : ID_mem_read;
+	assign nxt_EX_MemWrite = control_zero ? 0 : ID_mem_write;
+	assign nxt_EX_RS1_addr = control_zero ? 0 : ID_rs1_addr;
+	assign nxt_EX_RS2_addr = control_zero ? 0 : ID_rs2_addr;
 	IDEX IDEX0 (.clk (clk),
 				.rst_n (rst_n),
 				.isStall (stall),
 				// pipelined
-				.nxt_RS1_data (ID_rs1_data),
-				.nxt_RS2_data (ID_rs2_data),
-				.nxt_Immediate (ID_immediate),
-				.nxt_WB_addr (ID_writeb_addr),
-				.nxt_J_StorePC (ID_pc_plus4),
-				.nxt_is_Jump (ID_is_jump),
+				.nxt_RS1_data (nxt_EX_RS1_data),
+				.nxt_RS2_data (nxt_EX_RS2_data),
+				.nxt_Immediate (nxt_EX_Immediate),
+				.nxt_WB_addr (nxt_EX_WB_addr),
+				.nxt_J_StorePC (nxt_EX_J_StorePC),
+				.nxt_is_Jump (nxt_EX_is_Jump),
 				.RS1_data (EX_rs1_data),
 				.RS2_data (EX_rs2_data),
 				.Immediate (EX_immediate),
@@ -316,19 +320,19 @@ module RISCV_Pipeline(	clk,
 				.J_StorePC (EX_pc_plus4),
 				.is_Jump (EX_is_jump),
 				// Control Signals
-				.nxt_ALUop (ID_alu_op),
-				.nxt_MemtoReg (ID_mem2reg),
-				.nxt_RegWrite (ID_reg_write),
-				.nxt_MemRead (ID_mem_read),
-				.nxt_MemWrite (ID_mem_write),
+				.nxt_ALUop (nxt_EX_ALUop),
+				.nxt_MemtoReg (nxt_EX_MemtoReg),
+				.nxt_RegWrite (nxt_EX_RegWrite),
+				.nxt_MemRead (nxt_EX_MemRead),
+				.nxt_MemWrite (nxt_EX_MemWrite),
 				.ALUop (EX_alu_op),
 				.MemtoReg (EX_mem2reg),
 				.RegWrite (EX_reg_write),
 				.MemRead (EX_mem_read),
 				.MemWrite (EX_mem_write),
 				// forwarding
-				.nxt_RS1_addr (ID_rs1_addr),
-				.nxt_RS2_addr (ID_rs2_addr),
+				.nxt_RS1_addr (nxt_EX_RS1_addr),
+				.nxt_RS2_addr (nxt_EX_RS2_addr),
 				.nxt_ALUsrc (ID_alu_src),
 				.RS1_addr (EX_rs1_addr),
 				.RS2_addr (EX_rs2_addr),
@@ -349,21 +353,21 @@ module RISCV_Pipeline(	clk,
 	EXMEM EXME0(.clk (clk),
 				.rst_n (rst_n),
 				.isStall (stall),
-				.nxt_ALU_result (nxt_EX_ALU_result),   // ALU result -> mem write addr
-				.nxt_MemWrt_data (nxt_EX_MemWrt_data), // ALU inB -> mem write data
-				.nxt_WB_addr (nxt_EX_WB_addr),     // write-back register addr
-				.nxt_J_StorePC (nxt_EX_J_StorePC),
-				.nxt_is_Jump (nxt_EX_is_Jump),
+				.nxt_ALU_result (EX_alu_result), // ALU result -> mem write addr
+				.nxt_MemWrt_data (EX_alu_inB),   // ALU inB -> mem write data
+				.nxt_WB_addr (EX_writeb_addr), // write-back register addr
+				.nxt_J_StorePC (EX_pc_plus4),
+				.nxt_is_Jump (EX_is_jump),
 				.ALU_result (ME_alu_result),
 				.MemWrt_data (ME_memWrt_data),
 				.WB_addr (ME_writeb_addr),
 				.J_StorePC (ME_pc_plus4),
 				.is_Jump (ME_is_jump),
 				// Control Signals
-				.nxt_MemtoReg (nxt_EX_mem2reg),
-				.nxt_RegWrite (nxt_EX_RegWrite),
-				.nxt_MemRead (nxt_EX_MemRead),
-				.nxt_MemWrite (nxt_EX_MemWrite),
+				.nxt_MemtoReg (EX_mem2reg),
+				.nxt_RegWrite (EX_reg_write),
+				.nxt_MemRead (EX_mem_read),
+				.nxt_MemWrite (EX_mem_write),
 				.MemtoReg (ME_mem2reg),
 				.RegWrite (ME_reg_write),
 				.MemRead (ME_mem_read),
@@ -398,13 +402,14 @@ module RISCV_Pipeline(	clk,
 	// ============================================
 	// ==                   WB                   ==
 	// ============================================
-	assign WB_writeb_data = WB_mem2reg ? WB_memRd_data : WB_alu_result;
+	assign WB_writeb_data = WB_is_jump ? WB_pc_plus4 :
+							WB_mem2reg ? WB_memRd_data : WB_alu_result; 
 
 	// PC
 	wire Reg_eq;
 	PC PC0 (.clk (clk),
 			.rst_n (rst_n),
-			.isStall (stall),
+			.isStall (PC_stall),
 			.Jal (ID_jal),
 			.Jalr (ID_jalr),
 			.BEQ (ID_beq),
@@ -412,9 +417,12 @@ module RISCV_Pipeline(	clk,
 			.RS1_data (ID_rs1_data),
 			.RS2_data (ID_rs2_data),
 			.RS1_addr (ID_rs1_addr),
-			.Writeb_addr (WB_writeb_addr),
-			.Writeb_data (WB_pc_plus4),
-			.Writeb_is_Jump (WB_is_jump),
+			.MEM_Writeb_addr(ME_writeb_addr),
+		    .MEM_Writeb_data(ME_alu_result),
+		    .WB_Writeb_addr(WB_writeb_addr),
+		    .WB_Writeb_data(WB_writeb_data),
+		    .WB_Regwrite(WB_reg_write),
+		    .MEM_RegWrite(ME_reg_write), 
 			.Immediate (ID_immediate),
 			.ID_PC (ID_pc), // input
 			.IF_PC (IF_pc),
@@ -428,7 +436,8 @@ module RISCV_Pipeline(	clk,
 							.RS2_addr (EX_rs2_addr),
 							.EXME_WB_addr (ME_writeb_addr),
 							.MEWB_WB_addr (WB_writeb_addr),
-							.RegWrite (EX_reg_write),
+							.MEM_RegWrite (ME_reg_write),
+							.WB_RegWrite  (WB_reg_write),
 							.Fr1A (fwd1A),
 							.Fr1B (fwd1B),
 							.Fr2A (fwd2A),
@@ -442,7 +451,7 @@ module RISCV_Pipeline(	clk,
 				.inst_funct3(ID_inst[14:12]),
 				.ex_rd(EX_writeb_addr),
 				.wb_rd(WB_writeb_addr),
-				.id_memread(ID_mem_read),
+				//.id_regread(ID_mem_read),
 				.ex_memread(EX_mem_read),
 				.wb_regwrite(WB_reg_write),
 				.branch_compare(Reg_eq),
@@ -548,15 +557,17 @@ module FowardingUnit (input  [4:0] RS1_addr,
 					  input  [4:0] RS2_addr,
 					  input  [4:0] EXME_WB_addr, // EX/ME write back address
 					  input  [4:0] MEWB_WB_addr, // MEM/WB write back address
-					  input        RegWrite,
+					  input        MEM_RegWrite,
+					  input        WB_RegWrite,
 					  output       Fr1A,
 					  output       Fr1B,
 					  output       Fr2A,
 					  output       Fr2B);
-	assign Fr1A = ((RS1_addr==EXME_WB_addr) && RegWrite) ? 1'b1 : 1'b0;
-	assign Fr1B = ((RS2_addr==MEWB_WB_addr) && RegWrite) ? 1'b1 : 1'b0;
-	assign Fr2A = ((RS1_addr==EXME_WB_addr) && RegWrite) ? 1'b1 : 1'b0; 
-	assign Fr2B = ((RS2_addr==MEWB_WB_addr) && RegWrite) ? 1'b1 : 1'b0;
+	
+	assign Fr1A = ((RS1_addr==EXME_WB_addr) && MEM_RegWrite && (EXME_WB_addr != 0)) ? 1'b1 : 1'b0;
+	assign Fr1B = ((RS2_addr==EXME_WB_addr) && MEM_RegWrite && (EXME_WB_addr != 0)) ? 1'b1 : 1'b0;
+	assign Fr2A = ((RS1_addr==MEWB_WB_addr) & WB_RegWrite & (MEWB_WB_addr != 0)) ? 1'b1 : 1'b0; 
+	assign Fr2B = ((RS2_addr==MEWB_WB_addr) && WB_RegWrite && (MEWB_WB_addr != 0)) ? 1'b1 : 1'b0;
 endmodule
 
 //Status : Finish
@@ -626,13 +637,17 @@ module MainRegister (input clk,
 	end
 endmodule
 
-module JtypeForwardingUnit (input    [4:0] Writeb_addr,
-							input   [31:0] Writeb_data,
+module JtypeForwardingUnit (input    [4:0] WB_Writeb_addr,
+							input    [4:0] MEM_Writeb_addr,
+							input   [31:0] WB_Writeb_data,
+							input   [31:0] MEM_Writeb_data,
 							input    [4:0] RS1_addr,
 							input   [31:0] RS1_data,
-							input          Writeb_is_Jump, // whether the write back signal is jump
+							input          MEM_RegWrite,
+							input          WB_Regwrite, // whether the write back signal is jump
 							output  [31:0] Link_data);
-	assign Link_data = ((Writeb_addr == RS1_addr) && Writeb_is_Jump) ? Writeb_data : RS1_data;
+	assign Link_data = ((MEM_Writeb_addr == RS1_addr) & MEM_RegWrite) ? MEM_Writeb_data :
+						((WB_Writeb_addr == RS1_addr) & WB_Regwrite) ? WB_Writeb_data : RS1_data;
 endmodule
 
 //Status : Finish
@@ -646,9 +661,12 @@ module PC (input  clk,
 		   input  [31:0] RS1_data,
 		   input  [31:0] RS2_data,
 		   input   [4:0] RS1_addr,
-		   input   [4:0] Writeb_addr,
-		   input  [31:0] Writeb_data,
-		   input         Writeb_is_Jump,
+		   input   [4:0] MEM_Writeb_addr,
+		   input  [31:0] MEM_Writeb_data,
+		   input   [4:0] WB_Writeb_addr,
+		   input  [31:0] WB_Writeb_data,
+		   input         WB_Regwrite,
+		   input         MEM_RegWrite,
 		   input  [31:0] Immediate,
 		   input  [31:0] ID_PC,
 		   output reg [31:0] IF_PC,
@@ -660,17 +678,20 @@ module PC (input  clk,
 	wire [31:0] Imm_plus_RS1, Imm_plus_PC;
 	wire [31:0] j_link_data;
 
-	JtypeForwardingUnit JFWD (.Writeb_addr (Writeb_addr),
-							  .Writeb_data (Writeb_data),
+	JtypeForwardingUnit JFWD (.WB_Writeb_addr (WB_Writeb_addr),
+							  .MEM_Writeb_addr(MEM_Writeb_addr),
+							  .WB_Writeb_data (WB_Writeb_data),
+							  .MEM_Writeb_data(MEM_Writeb_data),
 							  .RS1_addr (RS1_addr),
 							  .RS1_data (RS1_data),
-							  .Writeb_is_Jump (Writeb_is_Jump),
+							  .MEM_RegWrite (MEM_RegWrite),
+							  .WB_Regwrite (WB_Regwrite),
 							  .Link_data (j_link_data)
 	);
 	assign isRegEq = (RS1_data == RS2_data) ? 1'b1 : 1'b0;
 	assign JalB = (isRegEq & BEQ) | (~isRegEq & BNE) | Jal;
-	assign Imm_plus_RS1 = Immediate + j_link_data;
-	assign Imm_plus_PC  = Immediate + ID_PC;
+	assign Imm_plus_RS1 = $signed(Immediate) + $signed(j_link_data);
+	assign Imm_plus_PC  = $signed(Immediate) + $signed(ID_PC); 
 	
 	always@ (*) begin
 		IF_PCplus4 = IF_PC + 4;
@@ -709,14 +730,14 @@ module IFID (input             clk,
 			PC <= 32'b0;
 			PCplus4 <= 32'b0;
 			Inst <= 32'b000000000000_00000_000_00000_0010011;
-		end else if (isFlush) begin
-			PC <= nxt_PC;
-			PCplus4 <= nxt_PCplus4;
-			Inst <= 32'b000000000000_00000_000_00000_0010011; // NOP
 		end else if (isStall) begin
 			PC <= PC;
 			PCplus4 <= PCplus4;
 			Inst <= Inst;
+		end else if (isFlush) begin
+			PC <= nxt_PC;
+			PCplus4 <= nxt_PCplus4;
+			Inst <= 32'b000000000000_00000_000_00000_0010011; // NOP
 		end else begin
 			PC <= nxt_PC;
 			PCplus4 <= nxt_PCplus4;
@@ -924,7 +945,7 @@ module hazard_detect(
 				inst_funct3,
 				ex_rd,
 				wb_rd,
-				id_memread,
+				//id_memread,
 				ex_memread,
 				wb_regwrite,
 				branch_compare,
@@ -941,7 +962,7 @@ module hazard_detect(
 	input [6:0] inst_op;
 	input [2:0] inst_funct3;
 	input [4:0] ex_rd, wb_rd; //rd in ex stage or wb stage
-	input id_memread, ex_memread, wb_regwrite, branch_compare; // branch_compare means if rs1 = rs2 in branch instruction
+	input ex_memread, wb_regwrite, branch_compare; // branch_compare means if rs1 = rs2 in branch instruction
 	//output branch_true, jal_true, jalr_true; // if we need to take branch step or jump step
 	output pcwrite, if_id_write, if_flush, control_zero; //control_zero = 1 when all control signals need to be zero
 	
@@ -952,17 +973,17 @@ module hazard_detect(
 		pcwrite = 1'b0;
 		if_id_write = 1'b0;
 		control_zero = 1'b0;
-		if(ex_memread & ((ex_rd == inst_rs1) | (ex_rd == inst_rs2))) begin // load-use hazard
+		if(ex_memread & ((ex_rd == inst_rs1) | (ex_rd == inst_rs2)) & (ex_rd != 0)) begin // load-use hazard
 			pcwrite = 1'b1;
 			if_id_write = 1'b1;
 			control_zero = 1'b1;
 		end
-		else if(wb_regwrite & ((wb_rd == inst_rs1) | (wb_rd == inst_rs2))) begin // write-read hazard
+		else if(wb_regwrite & ((wb_rd == inst_rs1) | (wb_rd == inst_rs2)) & (wb_rd != 0)) begin // write-read hazard
 			pcwrite = 1'b1;
 			if_id_write = 1'b1;
 			control_zero = 1'b1;
 		end
-		else if(inst_op == 7'b1100111 & wb_regwrite & (wb_rd == inst_rs1)) begin
+		else if(inst_op == 7'b1100111 & wb_regwrite & (wb_rd == inst_rs1) & (wb_rd != 0)) begin
 			pcwrite = 1'b1;
 			if_id_write = 1'b1;
 			control_zero = 1'b1;

@@ -9,6 +9,8 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 061122_Chou-dd Updates
+* Modify CHIP_hasHazard.v
 ### 061111_Chou-dd Updates
 * Add CHIP_hasHazard.v
 ### 061102_chinyi0523 Updates

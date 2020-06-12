@@ -75,8 +75,8 @@ always@ (*) begin
     case (state)
         IDLE  : state_nxt = CMPTAG;
         CMPTAG: begin
-            if (isBlockDirty && ~isHit) state_nxt = WRTMEM;
-            else if (~isHit) state_nxt = RDMEM; 
+            if (isBlockDirty && ~isHit && (proc_read ^ proc_write)) state_nxt = WRTMEM;
+            else if (~isHit && (proc_read ^ proc_write)) state_nxt = RDMEM; 
         end
         RDMEM  : state_nxt = mem_ready ? CMPTAG: RDMEM; 
         WRTMEM : state_nxt = mem_ready ? RDMEM : WRTMEM;

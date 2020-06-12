@@ -9,6 +9,16 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 061217_Jian-Han0504 Updates
+* CHIP_hasHazard.v 完成，已通過 RTL
+* CHIP_hasHazrd.v Coding Style 統一
+* 將 no-hazard 的檔案設為 CHIP_noHazard.v
+* 將 riscv spec 與 作業說明文件移入 spec 資料夾
+* 刪除在最外層的 ./cache
+* 將 checkpoint 投影片移至 ./checkpoint 資料夾
+* 新增 ./report 資料夾來放期末最後的報告
+* 將 ./RISCV-2 設成 ./RISCV
+
 ### 061122_Chou-dd Updates
 * Modify CHIP_hasHazard.v
 ### 061111_Chou-dd Updates

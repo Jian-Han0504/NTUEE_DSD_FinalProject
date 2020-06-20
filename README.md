@@ -9,6 +9,13 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 062023_Jian-Han0504 Updates
+* 刪除 L2cache.zip 應該是助教忘記刪
+* 刪除 hazard_unit.v 因為 hazard_unit 的 module 已經定義在 CHIP.v 了
+* 修改 CHIP_hasHazard.v 的 ALUcontrol (noHazard 懶得改了XD)
+  修改 SRLI 跟 SRAI 仍然需要看 func7[5]。
+  已經測試，CHIP_hasHazard.v 跑 hasHazard 跟 noHazard 測資都會過!
+
 ### 061217_Jian-Han0504 Updates
 * CHIP_hasHazard.v 完成，已通過 RTL
 * CHIP_hasHazrd.v Coding Style 統一

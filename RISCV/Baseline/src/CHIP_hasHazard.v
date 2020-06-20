@@ -510,7 +510,7 @@ module ALUControl (input  [5:0] Inst, // funct7[5], funct3, OP[5:4]
 	// else if R -> use func7[5] + func3
 	// else (I)  -> use 0 + func3
 	assign ALUCtrl = ~Inst[0] ? 4'b0000 :
-					 Inst[1] ? Inst[5:2]:
+					 (Inst[1] | (Inst[4] & ~Inst[3] & Inst[2])) ? Inst[5:2]:
 					 {1'b0, Inst[4:2]};
 endmodule
 

@@ -9,6 +9,14 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 062122_Chou-dd Updates
+* Add CHIP_1bit.v 
+* Add CHIP_1ibt_r.v 
+* Add CHIP_2bit.v 
+* Add CHIP_2bit_v2.v 
+* Add CHIP_always_not_taken.v 
+* Add CHIP_always_taken.v
+* Need baseline improvement to witness the benefits of saving cycles with BrPred unit, especially write-use hazard.
 ### 062023_Jian-Han0504 Updates
 * 刪除 L2cache.zip 應該是助教忘記刪
 * 刪除 hazard_unit.v 因為 hazard_unit 的 module 已經定義在 CHIP.v 了

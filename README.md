@@ -9,6 +9,9 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 062410_Chou-dd Updates
+* Solve the write-read hazard in CHIP_hasHazard and BrPred
+* 重新更新BrPred的測資
 ### 062122_Chou-dd Updates
 * Add CHIP_1bit.v 
 * Add CHIP_1ibt_r.v 

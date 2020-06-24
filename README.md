@@ -9,6 +9,8 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 062411_Chou-dd Updates
+* Improve Mainregister and Hazard_detect in CHIP_hasHazard and BrPred
 ### 062410_Chou-dd Updates
 * Solve the write-read hazard in CHIP_hasHazard and BrPred
 * 重新更新BrPred的測資

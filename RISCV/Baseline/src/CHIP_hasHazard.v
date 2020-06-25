@@ -439,6 +439,9 @@ module RISCV_Pipeline(	clk,
 							.Fr2B (fwd2B)
 	);
 	// hazard unit
+/////////////////////////////////////////////////////////
+//Hazard_Detect has been modified by Chou-dd(2020/6/23)//
+/////////////////////////////////////////////////////////
 	Hazard_Detect HZ (.RS1_addr (ID_rs1_addr),
 					  .RS2_addr (ID_rs2_addr),
 					  .Jalr (ID_jalr),
@@ -447,10 +450,8 @@ module RISCV_Pipeline(	clk,
 					  .Beq (ID_beq),
 					  .is_RegEq (ID_is_reg_eqaul),
 					  .EX_WrtBack_addr (EX_writeb_addr),
-					  .WB_WrtBack_addr (WB_writeb_addr),
 					  .EX_MemRead (EX_mem_read),
 					  .EX_RegWrite (EX_reg_write),
-					  .WB_RegWrite (WB_reg_write),
 					  .Hazard_Stall (hazard_stall),
 					  .Flush_IFID (IFID_flush),
 					  .Flush_IDEX (IDEX_flush)
@@ -523,7 +524,6 @@ endmodule
 // SLT = 0010 | XOR = 0100 | SRA = 1101 | SLL = 0001 |
 // SRL = 0101 |
 // NOP = ADD x0, x0, x0
-
 module ImmGenerator (input      [31:0] Inst,
 					 output reg [31:0] Immediate
 	);
@@ -581,6 +581,11 @@ module ALU (input  [31:0] InA,  // rst1
 endmodule
 
 //Status : Finish
+
+/////////////////////////////////////////////////////////
+//Main register has been modified by Chou-dd(2020/6/24)//
+/////////////////////////////////////////////////////////
+
 module MainRegister (input clk,
 					 input rst_n,
 					 input  [31:0] WrtBack_data,
@@ -595,8 +600,8 @@ module MainRegister (input clk,
 	reg [31:0] r32 [0:31];
 	reg [31:0] nxt_r32 [0:31];
 
-	assign RS1_data = r32[RS1_addr];
-	assign RS2_data = r32[RS2_addr];
+	assign RS1_data = (RegWrite & (WrtBack_addr == RS1_addr) & (|WrtBack_addr)) ? WrtBack_data : r32[RS1_addr];
+	assign RS2_data = (RegWrite & (WrtBack_addr == RS2_addr) & (|WrtBack_addr)) ? WrtBack_data : r32[RS2_addr];
 	always @(*) begin
 		nxt_r32[0] = 32'b0;
 		for (i=1; i<=31; i=i+1)
@@ -729,6 +734,10 @@ module PC (input  clk,
 	end
 endmodule
 
+/////////////////////////////////////////////////////////
+//Hazard_Detect has been modified by Chou-dd(2020/6/24)//
+/////////////////////////////////////////////////////////
+
 module Hazard_Detect( // in ID stage
 				RS1_addr,
 				RS2_addr,
@@ -740,16 +749,14 @@ module Hazard_Detect( // in ID stage
 				EX_WrtBack_addr, // load use hazard, jalr hazard
 				EX_MemRead,
 				EX_RegWrite,
-				WB_WrtBack_addr, // write read the same register hazard
-				WB_RegWrite,
 				Hazard_Stall,
 				Flush_IFID,
 				Flush_IDEX
 	);			
 	input [4:0] RS1_addr, RS2_addr;
 	input       Jalr, Jal, Bne, Beq, is_RegEq;
-	input [4:0] EX_WrtBack_addr, WB_WrtBack_addr; // rd in ex stage or wb stage
-	input 		EX_MemRead, EX_RegWrite, WB_RegWrite;
+	input [4:0] EX_WrtBack_addr; // rd in ex stage
+	input 		EX_MemRead, EX_RegWrite;
 
 	// Flush_IDEX = 1 when all control signals need to be zero
 	output reg Hazard_Stall, Flush_IDEX;
@@ -760,19 +767,15 @@ module Hazard_Detect( // in ID stage
 	always @(*) begin
 		Hazard_Stall = 1'b0;
 		Flush_IDEX = 1'b0;
-		if (EX_MemRead & ((EX_WrtBack_addr == RS1_addr) | (EX_WrtBack_addr == RS2_addr )) & (EX_WrtBack_addr != 0)) begin // load-use hazard
+		if (EX_MemRead & ((EX_WrtBack_addr == RS1_addr) | (EX_WrtBack_addr == RS2_addr )) & (|EX_WrtBack_addr)) begin // load-use hazard
 			Hazard_Stall = 1'b1;
 			Flush_IDEX = 1'b1;
 		end
-		else if (WB_RegWrite & ((WB_WrtBack_addr == RS1_addr) | (WB_WrtBack_addr == RS2_addr )) & (WB_WrtBack_addr != 0)) begin // write-read hazard
+		else if (Jalr & EX_RegWrite & (EX_WrtBack_addr == RS1_addr) & (|EX_WrtBack_addr)) begin // jalr hazard
 			Hazard_Stall = 1'b1;
 			Flush_IDEX = 1'b1;
 		end
-		else if (Jalr & EX_RegWrite & (EX_WrtBack_addr == RS1_addr) & (EX_WrtBack_addr != 0)) begin // jalr hazard
-			Hazard_Stall = 1'b1;
-			Flush_IDEX = 1'b1;
-		end
-		else if ((Bne|Beq) & EX_RegWrite & EX_WrtBack_addr != 0 & 
+		else if ((Bne|Beq) & EX_RegWrite & (|EX_WrtBack_addr) & 
 				(EX_WrtBack_addr == RS1_addr | EX_WrtBack_addr == RS2_addr)) begin // branch hazard
 				Hazard_Stall = 1'b1;
 				Flush_IDEX = 1'b1;

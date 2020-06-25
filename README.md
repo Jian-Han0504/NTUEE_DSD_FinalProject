@@ -9,6 +9,12 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+### 062605_chinyi0523 Updates
+* Add Compression RTL and SYN File
+* Cycle time for no warning : Synthesis 5, Tb 7.5
+* Synthesis 5 still can reduce !
+* And Spec/Compression_DEADxF625 detail
+
 ### 062421_Jian-Han0504 Updates
 * 修改 Baseline 中的 cache (better coding, 改成大小只有 4 blocks * 4 words 因為 I, D 加起來 = 32 words)。
 * 在 Baseline 中放入 L2Cache 的側資，只用 L1 跑，但是 tb 的 cycle 要調大。

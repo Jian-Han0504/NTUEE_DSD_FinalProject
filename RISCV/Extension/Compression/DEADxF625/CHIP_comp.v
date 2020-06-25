@@ -119,44 +119,47 @@ wire [31:0] DCACHE_rdata;
         .mem_ready  (mem_ready_I)
 	);
 endmodule
-module Generator(clk,rst_n,stall,flush,raw_inst,decode_inst,select,is_16,reserve,r_stall);
+module Generator(clk,rst_n,stall,flush,raw_inst,decode_inst,Select,is_16,reserve,r_stall);
 	input clk,rst_n;
 	input stall,flush;
 	input [31:0] raw_inst;
 	output reg [31:0] decode_inst;
-	output [1:0] select;
+	output [1:0] Select;
 	output is_16;
 	output [1:0] reserve;
 	output r_stall;
-
+	
 	reg [15:0] buffer,nxt_buffer;
 	reg [1:0] reserve,nxt_reserve;
+	reg [1:0] select,nxt_select;
 	reg r_stall,nxt_r_stall;
 
 	wire [15:0] inst_16;
 	wire [31:0] transform;
-	
-	assign is_16 = (select==2'b01) ? ~(raw_inst[16]&raw_inst[17]) : ~(raw_inst[0]&raw_inst[1]);
+	wire zero;
+	assign Select = select;
+	assign zero = raw_inst==32'b0 ? 0 : 1;
+	assign is_16 = zero ? ((select==2'b01) ? ~(raw_inst[16]&raw_inst[17]) : (select==2'b11) ? ~(decode_inst[0]&decode_inst[1]) : ~(raw_inst[0]&raw_inst[1])) : 0 ;
 	assign inst_16 = (select==2'b01) ? raw_inst[31:16] : raw_inst[15:0];
-	Selector Selector0(.clk(clk),.rst_n(rst_n&~flush),.flush(flush),.is_16(is_16),.cache_stall(stall),.Sel(select));
 	Decompressor Decompressor0(.inst_16(inst_16),.inst_32(transform));
 	always @(*) begin
 		nxt_r_stall = stall;
 		nxt_reserve = stall ? reserve : select;
-		decode_inst = raw_inst;
+		decode_inst = is_16 ? transform : raw_inst ;
 		nxt_buffer = buffer;
+		//nxt_select = (rst_n&zero) ? stall ? select : (is_16 ? ~select : select) : 0;
 		case(select)
 			2'b00: begin
 				if (is_16) decode_inst = transform;
 			end
 			2'b01: begin
 				if (is_16) decode_inst = transform;
-				else nxt_buffer = inst_16;
+				else nxt_buffer = stall ? buffer : inst_16;
 			end
 			2'b11: begin
 				decode_inst = {raw_inst[15:0],buffer};
 				if (~is_16) begin
-					nxt_buffer = inst_16;
+					nxt_buffer = stall ? buffer : inst_16;
 				end
 			end
 			default: begin 
@@ -164,36 +167,30 @@ module Generator(clk,rst_n,stall,flush,raw_inst,decode_inst,select,is_16,reserve
 				nxt_buffer = buffer;
 			end
 		endcase
+
+		case(select)
+			2'b00: begin
+				nxt_select = (rst_n&zero) ? stall ? select : flush ? 2'b00 : (is_16 ? 2'b01 : 2'b00) : 2'b00;
+			end
+			2'b01: begin
+				nxt_select = (rst_n&zero) ? stall ? select : flush ? 2'b00 :(is_16 ? 2'b00 : 2'b11) : 2'b00;
+			end
+			2'b11: begin
+				nxt_select = (rst_n) ? stall ? select : 2'b01 : 2'b00;
+			end
+			default nxt_select = 2'b00;
+		endcase
 	end
 
 	always @(posedge clk) begin
 		buffer <= nxt_buffer;
 		reserve <= nxt_reserve;
 		r_stall <= nxt_r_stall;
+		select <= nxt_select;
 	end
 endmodule
 
-module Selector(clk,rst_n,is_16,flush,cache_stall,Sel);
-    input clk,rst_n;
-    input is_16,flush,cache_stall;
-    output [1:0] Sel;
 
-    reg [1:0] state;
-    reg [1:0] nxt_state;
-    assign Sel = state;
-    always@(*)begin
-		case(state)
-			2'b00: nxt_state = rst_n ? (cache_stall ? 2'b00 : is_16 ? 2'b01 : 2'b00) : 2'b00;
-			2'b01: nxt_state = rst_n ? (cache_stall ? 2'b01 : is_16 ? 2'b00 : 2'b11) : 2'b00;
-			2'b11: nxt_state = rst_n ? (cache_stall ? 2'b11 : 2'b01) : 2'b00;
-			default nxt_state = 2'b00;
-		endcase
-    end 
-    /////Sequential
-    always @(posedge clk) begin
-        state <= nxt_state;
-    end
-endmodule
 module Decompressor(inst_16,inst_32);
 	input [15:0] inst_16;
 	output reg[31:0] inst_32;
@@ -286,7 +283,7 @@ module RISCV_Pipeline(	clk,
 	// IF
 	wire [31:0] IF_inst;
 	wire [31:0] IF_pc;
-	wire [31:0] IF_pc_plus4;
+	wire [31:0] IF_pc_plus;
 	wire [31:0] IF_nxt_pc; // next pc to PC register
 	
 	// ID
@@ -387,15 +384,13 @@ module RISCV_Pipeline(	clk,
 	// ==             PIPELINED            ==
 	// ======================================
 	wire [31:0] IF_16decode;
-	wire [1:0] C_select,C_reserve;
+	wire [1:0]C_select,C_reserve;
 	wire C_is_16,IF_C_plus2,ID_C_plus2,C_r_stall;
 	wire C_PC16_stall,C_32buf_stall;
-	wire ID_C_plus21;
 	assign C_PC16_stall = (~(C_select==2'b01))&C_is_16;
-	assign C_32buf_stall = (C_select==2'b01)&(~C_is_16);
+	assign C_32buf_stall = (C_select==2'b11);
 	assign IF_C_plus2 = (C_select==2'b01) ? 1:0;  
-	assign ID_C_plus21 = (C_r_stall) ? (C_reserve==2'b01) : ID_C_plus2;
-	Generator GN (.clk(clk),.rst_n(rst_n),.stall(cache_stall|hazard_stall),.flush(IFID_flush),.raw_inst(IF_inst),.decode_inst(IF_16decode),.select(C_select),.is_16(C_is_16),.reserve(C_reserve),.r_stall(C_r_stall));
+	Generator GN (.clk(clk),.rst_n(rst_n),.stall(cache_stall|hazard_stall),.flush(IFID_flush),.raw_inst(IF_inst),.decode_inst(IF_16decode),.Select(C_select),.is_16(C_is_16),.reserve(C_reserve),.r_stall(C_r_stall));
 	// IF/ID
 	IFID IFID0 (.clk (clk), 
 				.rst_n (rst_n), 
@@ -405,7 +400,7 @@ module RISCV_Pipeline(	clk,
 				.is_Flush (IFID_flush),
 				.nxt_CPCplus2 (IF_C_plus2),
 				.nxt_PC (IF_pc),
-				.nxt_PCplus4 (IF_pc_plus4),
+				.nxt_PCplus4 (IF_pc_plus),
 				.nxt_Inst (IF_16decode),
 				.PC (ID_pc),
 				.PCplus4 (ID_pc_plus4),
@@ -547,14 +542,15 @@ module RISCV_Pipeline(	clk,
 	// PC
 	PC PC0 (.clk (clk),
 			.rst_n (rst_n),
-			.Jal (ID_jal),
-			.Jalr (ID_jalr),
+			.Jal (ID_jal & (C_select!=2'b11)),
+			.Jalr (ID_jalr & (C_select!=2'b11)),
 			.Beq (ID_beq),
 			.Bne (ID_bne),
 			.Cache_Stall (cache_stall),
 			.Hazard_Stall (hazard_stall),
 			.Comp_16_Stall (C_PC16_stall),
-			.state (ID_C_plus21),
+			.state (C_select==2'b01),
+			.is_16 (C_is_16|C_select==2'b01&~C_is_16|C_select==2'b11),
 			.ID_PC (ID_pc),
 			.Immediate (ID_immediate),
 			.ID_RS1_data (ID_rs1_data),
@@ -572,7 +568,7 @@ module RISCV_Pipeline(	clk,
 		    .ME_RegWrite(ME_reg_write), 
 			// end of J-type Forwarding
 			.IF_PC (IF_pc),
-			.IF_PCplus4 (IF_pc_plus4),
+			.IF_PCplus (IF_pc_plus),
 			.IF_nxt_PC (IF_nxt_pc),
 			.is_RegEq (ID_is_reg_eqaul)
 	);
@@ -626,25 +622,25 @@ module MainControl (input  	   [5:0] Inst, // funct3[0] OP[6:2] (INST[12] INST[6
 	always@(*) begin
 		case (Inst[4:0])
 			5'b01100: begin // R type
-				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b1;
+				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b1;
 			end
 			5'b00000: begin // lw
 				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b1; MemWrite = 1'b0; MemtoReg = 1'b1; ALUSrc = 1'b1; RegWrite=1'b1;
 			end
 			5'b01000: begin // sw
-				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b1; MemtoReg = 1'bx; ALUSrc = 1'b1; RegWrite=1'b0;
+				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b1; MemtoReg = 1'b0; ALUSrc = 1'b1; RegWrite=1'b0;
 			end
 			5'b11000: begin // Beq bne
-				Jalr = 1'b0; Jal = 1'b0; Beq = ~Inst[5]; Bne = Inst[5]; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'b0; RegWrite=1'b0;
+				Jalr = 1'b0; Jal = 1'b0; Beq = ~Inst[5]; Bne = Inst[5]; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b0;
 			end
 			5'b00100: begin // I type
-				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b1; RegWrite=1'b1;
+				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b1; RegWrite=1'b1;
 			end
 			5'b11011: begin // jal
-				Jalr = 1'b0; Jal = 1'b1; Beq = 1'b0; Bne = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
+				Jalr = 1'b0; Jal = 1'b1; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
 			end
 			5'b11001: begin // jalr
-				Jalr = 1'b1; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'bx; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
+				Jalr = 1'b1; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'bx; ALUSrc = 1'bx; RegWrite=1'b1;
 			end  
 			default: begin
 				Jalr = 1'b0; Jal = 1'b0; Beq = 1'b0; Bne = 1'b0; MemRead = 1'b0; MemWrite = 1'b0; MemtoReg = 1'b0; ALUSrc = 1'b0; RegWrite=1'b0;
@@ -822,7 +818,8 @@ module PC (input  clk,
 		   input  Bne,
 		   input  Cache_Stall,
 		   input  Hazard_Stall,
-		   input  state,	
+		   input  state,
+		   input  is_16,
 		   input  Comp_16_Stall,   		   
 		   input  [31:0] ID_PC,
 		   input  [31:0] Immediate,
@@ -841,7 +838,7 @@ module PC (input  clk,
 		   input         ME_RegWrite,
 		   // end of J-type Forwarding
 		   output reg [31:0] IF_PC,
-		   output reg [31:0] IF_PCplus4,
+		   output reg [31:0] IF_PCplus,
 		   output reg [31:0] IF_nxt_PC, // back to instruction memory
 		   output            is_RegEq); // used for hazard detection 
 	wire is_Stall;
@@ -869,18 +866,18 @@ module PC (input  clk,
 	);
 
 	assign is_RegEq = (link_rs1_data == link_rs2_data) ? 1'b1 : 1'b0;
-	assign JalB = (is_RegEq & Beq) | (~is_RegEq & Bne) | Jal;
+	assign JalB = ((is_RegEq & Beq) | (~is_RegEq & Bne) | Jal);
 	assign imm_plus_RS1 = $signed(Immediate) + $signed(link_rs1_data);
 	assign imm_plus_PC  = $signed(Immediate) + $signed(ID_PC); 
 	
 	always@ (*) begin
-		IF_PCplus4 = IF_PC + 4;
+		IF_PCplus = is_16 ? (IF_PC + 2) : (IF_PC + 4);
 		if (is_Stall) begin 
 			IF_nxt_PC = IF_PC;
 		end else begin
 			IF_nxt_PC = Jalr ? imm_plus_RS1 :
-					 	JalB ? (state ? (imm_plus_PC + 2) : imm_plus_PC) : 
-						Comp_16_Stall ? IF_PC : IF_PCplus4; // Hank
+					 	JalB ? imm_plus_PC : 
+						IF_PCplus; // Hank
 		end
 	end
 
@@ -965,7 +962,7 @@ module IFID (input             clk,
 	);
 	wire is_Stall;
 
-	assign is_Stall = Cache_Stall | Hazard_Stall | Compression_Stall;
+	assign is_Stall = Cache_Stall | Hazard_Stall;
 
 	always@ (posedge clk) begin
 		CPCplus2 <= 1'b0;

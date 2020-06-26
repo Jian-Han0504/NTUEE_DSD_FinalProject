@@ -10,6 +10,9 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062614_Chou-dd Updates
+* Upload cache_blockin.v
+* I am so tired!!!
 ### 062609_Chou-dd Updates
 * Upload report_chou.docx
 =======

@@ -10,6 +10,8 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062623_Chou-dd Updates
+* Remove write-read hazard in CHIP_compression.v
 ### 062614_Chou-dd Updates
 * Upload cache_blockin.v
 * I am so tired!!!

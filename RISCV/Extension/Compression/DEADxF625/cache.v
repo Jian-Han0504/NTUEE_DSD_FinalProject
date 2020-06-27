@@ -114,6 +114,7 @@ always@ (*) begin
         IDLE  : proc_stall = 1'b1;
         CMPTAG: begin
             if (~isBlockHit & (proc_read ^ proc_write)) proc_stall = 1'b1;
+            else proc_stall = 1'b0;
             if (proc_read & ~proc_write) begin // read
                 case (proc_addr [1:0])
                     2'b00: proc_rdata = cache [block_index][DATA0BEG:DATA0END];
@@ -146,6 +147,7 @@ always@ (*) begin
             mem_wdata = cache [block_index][DATA3BEG:DATA0END];
             mem_addr = {cache [block_index][TAGBEG:TAGEND], block_index};
         end
+        default : proc_stall = 1'b0;
     endcase
 end
 

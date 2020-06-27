@@ -10,6 +10,10 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062800_chinyi0523 Updates
+* Add two versions of Compression
+* Both Pass SYN with 3ns
+* Both Pass RTL
 ### 062720_Chou-dd Updates
 * Add report_chou.pptx
 ### 062623_Chou-dd Updates

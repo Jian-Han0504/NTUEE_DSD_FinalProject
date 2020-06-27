@@ -10,6 +10,8 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062720_Chou-dd Updates
+* Add report_chou.pptx
 ### 062623_Chou-dd Updates
 * Remove write-read hazard in CHIP_compression.v
 ### 062614_Chou-dd Updates

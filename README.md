@@ -10,6 +10,10 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062820_chinyi0523 Updates
+* Add DSD_Final.ppt in Final Report/ (only Comp & BP)
+* Modify files in Compression
+* Add pngs for report in Final Report/reportpng/
 ### 062818_Chou-dd Updates
 * Add DSD_Final_Project_Scores_RISCV in BrPred
 * Add CHIP_syn in BrPred

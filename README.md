@@ -9,11 +9,42 @@ Format:
 * Specify what files you just updated and the changes in these files.
 * Some notes for other collaborators and comments...
 ## Updates
+<<<<<<< HEAD
+### 062820_chinyi0523 Updates
+* Add DSD_Final.ppt in Final Report/ (only Comp & BP)
+* Modify files in Compression
+* Add pngs for report in Final Report/reportpng/
+### 062818_Chou-dd Updates
+* Add DSD_Final_Project_Scores_RISCV in BrPred
+* Add CHIP_syn in BrPred
+* Add cache.v in BrPred
+* Add Different_AT.txt in Baseline
+### 062800_chinyi0523 Updates
+* Add two versions of Compression
+* Both Pass SYN with 3ns
+* Both Pass RTL
+### 062720_Chou-dd Updates
+* Add report_chou.pptx
+### 062623_Chou-dd Updates
+* Remove write-read hazard in CHIP_compression.v
+### 062614_Chou-dd Updates
+* Upload cache_blockin.v
+* I am so tired!!!
+### 062609_Chou-dd Updates
+* Upload report_chou.docx
+=======
+### 062605_chinyi0523 Updates
+* Add Compression RTL and SYN File
+* Cycle time for no warning : Synthesis 5, Tb 7.5
+* Synthesis 5 still can reduce !
+* And Spec/Compression_DEADxF625 detail
+
 ### 062421_Jian-Han0504 Updates
 * 修改 Baseline 中的 cache (better coding, 改成大小只有 4 blocks * 4 words 因為 I, D 加起來 = 32 words)。
 * 在 Baseline 中放入 L2Cache 的側資，只用 L1 跑，但是 tb 的 cycle 要調大。
 ```$ ncverilog Final_tb.v CHIP_hasHazard.v slow_memory.v +define+L2Cache +access+r```
 
+>>>>>>> 9fb5b212551dc62d9fb56e8869cdcb575e0f4270
 ### 062411_Chou-dd Updates
 * Improve Mainregister and Hazard_detect in CHIP_hasHazard and BrPred
 ### 062410_Chou-dd Updates

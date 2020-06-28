@@ -10,6 +10,10 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 062818_Chou-dd Updates
+* Add DSD_Final_Project_Scores_RISCV in BrPred
+* Add CHIP_syn in BrPred
+* Add cache.v in BrPred
 ### 062800_chinyi0523 Updates
 * Add two versions of Compression
 * Both Pass SYN with 3ns

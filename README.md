@@ -14,6 +14,7 @@ Format:
 * Add DSD_Final_Project_Scores_RISCV in BrPred
 * Add CHIP_syn in BrPred
 * Add cache.v in BrPred
+* Add Different_AT.txt in Baseline
 ### 062800_chinyi0523 Updates
 * Add two versions of Compression
 * Both Pass SYN with 3ns

@@ -764,7 +764,27 @@ module PC (input  clk,
 	//assign JalB = (is_RegEq & Beq) | (~is_RegEq & Bne) | Jal;
 	assign imm_plus_RS1 = $signed(Immediate) + $signed(link_rs1_data);
 	assign imm_plus_PC  = $signed(Immediate) + $signed(ID_PC); 
-	
+	/*integer total_b;
+	initial begin
+		total_b = 0;
+		
+	end
+	always @(posedge Beq) begin
+		total_b = total_b + 1;
+	end
+	always @(posedge Bne) begin
+		total_b = total_b + 1;
+	end
+	integer wrong;
+	initial begin
+		wrong = 0;
+	end
+	always @(posedge pre_wrong) begin
+		#(0.1);
+		if(pre_wrong) begin
+			wrong = wrong + 1;
+		end
+	end*/
 	always@ (*) begin
 		IF_PCplus4 = IF_PC + 4;
 		if (is_Stall) begin 
@@ -830,6 +850,7 @@ module Twobit_predictor(
 						 ((!ID_BrPre) & ID_taken & ID_Branch) ? 1'b1 : 1'b0;
 	assign Pre_Wrong = (ID_BrPre & (!ID_taken) & ID_Branch) ? 1'b1 : 
 					   ((!ID_BrPre) & ID_taken & ID_Branch) ? 1'b1 : 1'b0;
+	
 	
 	//2-bit Prediction unit
 	always @(*) begin

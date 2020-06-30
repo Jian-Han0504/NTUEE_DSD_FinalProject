@@ -10,6 +10,8 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 063015_Chou-dd Updates
+* Update report_chou.docx in baseline(include forwarding unit)
 ### 062820_chinyi0523 Updates
 * Add DSD_Final.ppt in Final Report/ (only Comp & BP)
 * Modify files in Compression

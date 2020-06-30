@@ -10,6 +10,9 @@ Format:
 * Some notes for other collaborators and comments...
 ## Updates
 <<<<<<< HEAD
+### 063016_Chou-dd Updates
+* Add DSD_Final_Project_Scores_RISCV_without_L2cache.docx in Final Report folder
+* Add report_chou.docx in Final Report Folder
 ### 063015_Chou-dd Updates
 * Update report_chou.docx in baseline(include forwarding unit)
 ### 062820_chinyi0523 Updates
